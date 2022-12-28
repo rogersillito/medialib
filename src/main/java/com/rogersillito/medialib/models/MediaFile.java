@@ -1,12 +1,15 @@
 package com.rogersillito.medialib.models;
 
-import lombok.Data;
-import lombok.NonNull;
-
-import java.io.File;
+import com.rogersillito.medialib.services.FileSystemUtils;
+import lombok.*;
 
 @Data
-public class MediaFile {
-    //TODO: need some ID3 props here...
-    @NonNull File file;
+public abstract class MediaFile {
+
+    final MediaDirectory parent;
+    @NonNull String fileName;
+
+    String getFilePath() {
+        return FileSystemUtils.joinPath(parent.getPath(), fileName);
+    }
 }

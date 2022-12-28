@@ -14,6 +14,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
     @Autowired
+    final AudioFileFactory audioFileFactory;
+    @Autowired
     final FileSystemUtils fileSystemUtils;
     public Optional<MediaDirectory> walk(String path) {
         return walkDirectory(path, 0);
@@ -23,6 +25,8 @@ public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
         if (!fileSystemUtils.canWalk(path)) {
             return Optional.empty();
         }
+        var thisDirectory = new MediaDirectory();
+        thisDirectory.setPath(path);
         var subdirectories = new ArrayList<MediaDirectory>();
         var mediaFiles = new ArrayList<MediaFile>();
         var subDirDepth = depth + 1;
@@ -32,14 +36,11 @@ public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
         }
         for (File file :
                 fileSystemUtils.getFiles(path)) {
-            //TODO: use a factory to create a MediaFile instead (and load ID3 data etc)
-            mediaFiles.add(new MediaFile(file));
+            mediaFiles.add(audioFileFactory.create(thisDirectory, file));
         }
         if (depth == 0 || mediaFiles.size() > 0 || subdirectories.size() > 0) {
-            var thisDirectory = new MediaDirectory();
-            thisDirectory.setPath(path);
-            thisDirectory.getDirectories().addAll(subdirectories);
-            thisDirectory.getFiles().addAll(mediaFiles);
+            thisDirectory.setDirectories(subdirectories);
+            thisDirectory.setFiles(mediaFiles);
             return Optional.of(thisDirectory);
         }
         return Optional.empty();

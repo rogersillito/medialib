@@ -8,6 +8,6 @@ import java.util.List;
 @Data
 public class MediaDirectory {
     List<MediaDirectory> directories = new ArrayList<>();
-    List<MediaFile> files = new ArrayList<>();
+    List<? extends MediaFile> files = new ArrayList<>();
     String path;
 }

@@ -1,5 +1,6 @@
 package com.rogersillito.medialib.services;
 
+import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -19,6 +21,8 @@ public class MediaDirectoryWalkerTests {
     private MediaDirectoryWalker sut;
 
     @Mock
+    AudioFileFactory mockedAudioFileFactory;
+    @Mock
     FileSystemUtils mockedFileSystemUtils;
     private final String path = FileSystemUtils.joinPath("some", "path", "somewhere");
 
@@ -26,7 +30,11 @@ public class MediaDirectoryWalkerTests {
     @BeforeEach
     void arrange() {
         MockitoAnnotations.openMocks(this);
-        this.sut = new MediaDirectoryWalker(mockedFileSystemUtils);
+        //TODO: pass the received MediaDirectory as the AudioFile's ctr param
+        when(mockedAudioFileFactory.create(any(MediaDirectory.class), any(File.class)))
+                .thenReturn(new AudioFile(null, "file.mp3"));
+
+        this.sut = new MediaDirectoryWalker(mockedAudioFileFactory, mockedFileSystemUtils);
     }
 
     @Test
