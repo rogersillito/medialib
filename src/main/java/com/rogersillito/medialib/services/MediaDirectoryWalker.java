@@ -44,5 +44,4 @@ public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
         }
         return Optional.empty();
     }
-
 }

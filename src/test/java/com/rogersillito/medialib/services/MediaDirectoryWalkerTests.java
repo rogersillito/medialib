@@ -7,11 +7,11 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.File;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 public class MediaDirectoryWalkerTests {
@@ -20,7 +20,7 @@ public class MediaDirectoryWalkerTests {
 
     @Mock
     FileSystemUtils mockedFileSystemUtils;
-    private final String path = "/some/path/somewhere";
+    private final String path = FileSystemUtils.joinPath("some", "path", "somewhere");
 
 
     @BeforeEach
@@ -30,7 +30,14 @@ public class MediaDirectoryWalkerTests {
     }
 
     @Test
-    public void whenNoFilesOrDirectoriesFound_returnsEmptyMediaDirectory() {
+    public void whenPathInvalid_returnsEmpty() {
+        when(mockedFileSystemUtils.canWalk(path)).thenReturn(false);
+        var result = sut.walk(path);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void whenNoFilesOrDirectoriesFound_returnsMediaDirectoryWithNoContent() {
         when(mockedFileSystemUtils.canWalk(path)).thenReturn(true);
         when(mockedFileSystemUtils.getDirectories(path)).thenReturn(Collections.emptyList());
         when(mockedFileSystemUtils.getFiles(path)).thenReturn(Collections.emptyList());
@@ -38,24 +45,43 @@ public class MediaDirectoryWalkerTests {
         var result = sut.walk(path);
         assertTrue(result.isPresent());
         assertEquals(path, result.get().getPath());
+
         assertEquals(0, result.get().getDirectories().size());
         assertEquals(0, result.get().getFiles().size());
     }
 
     @Test
     public void whenFilesAndEmptyDirsFoundInNestedDirs_returnsMediaDirectoryExcludingEmptyDirs() {
-        when(mockedFileSystemUtils.canWalk(path)).thenReturn(true);
+        /*
+        /some/path/somewhere
+            /some/path/somewhere/A
+                /some/path/somewhere/A/C
+                /1a.mp3
+                /2a.mp3
+            /some/path/somewhere/B
+            /1.mp3
+            /2.mp3
+        */
+        when(mockedFileSystemUtils.canWalk(anyString()))
+                .thenReturn(true);
+
         when(mockedFileSystemUtils.getDirectories(path))
-                //TODO: fix this test - consecutive call config not working yet: https://javadoc.io/static/org.mockito/mockito-core/4.10.0/org/mockito/Mockito.html#10
-                .thenReturn(List.of(createFile("A")), List.of(createFile("B")), List.of(createFile("C")), Collections.<File>emptyList());
-//                .thenReturn(List.of(createFile("A")))
-//                .thenReturn(List.of(createFile("B")))
-//                .thenReturn(List.of(createFile("C")))
-//                .thenReturn(Collections.emptyList());
+                .thenReturn(List.of(fileOrDirAtPath("A"), fileOrDirAtPath("B")));
+        when(mockedFileSystemUtils.getDirectories(FileSystemUtils.joinPath(path, "A")))
+                .thenReturn(List.of(fileOrDirAtPath("A", "C")));
+        when(mockedFileSystemUtils.getDirectories(FileSystemUtils.joinPath("A", "B"))).thenReturn(List.of());
+        when(mockedFileSystemUtils.getDirectories(FileSystemUtils.joinPath("A", "C"))).thenReturn(List.of());
+
         when(mockedFileSystemUtils.getFiles(path))
-                .thenReturn(List.of(createFile("1.mp3"),createFile("2.mp3")))
-                .thenReturn(List.of(createFile("A/1.mp3"),createFile("A/2.mp3")))
-                .thenReturn(Collections.emptyList());
+                .thenReturn(List.of(
+                        fileOrDirAtPath("1.mp3"),
+                        fileOrDirAtPath("2.mp3")));
+        when(mockedFileSystemUtils.getFiles(FileSystemUtils.joinPath(path, "A")))
+                .thenReturn(List.of(
+                        fileOrDirAtPath("A", "1a.mp3"),
+                        fileOrDirAtPath("A", "2a.mp3")));
+        when(mockedFileSystemUtils.getFiles(FileSystemUtils.joinPath(path, "B"))).thenReturn(List.of());
+        when(mockedFileSystemUtils.getFiles(FileSystemUtils.joinPath(path, "A", "C"))).thenReturn(List.of());
 
         var result = sut.walk(path);
         assertTrue(result.isPresent());
@@ -63,13 +89,20 @@ public class MediaDirectoryWalkerTests {
         assertEquals(2, topDir.getFiles().size());
         assertEquals(1, topDir.getDirectories().size());
         assertTrue(topDir.getDirectories().stream().findFirst().isPresent());
+
         var dirA = topDir.getDirectories().stream().findFirst().get();
-        assertEquals(path + "/A", dirA.getPath());
+        assertEquals(FileSystemUtils.joinPath(path, "A"), dirA.getPath());
         assertEquals(2, dirA.getFiles().size());
         assertEquals(0, dirA.getDirectories().size());
     }
 
-    File createFile(String path) {
-        return new File(this.path + "/" + path);
+    File fileOrDirAtPath(String... pathElements) {
+        var joiner = new StringJoiner(File.separator);
+        joiner.add(this.path);
+        for (String pathElement:
+                pathElements) {
+            joiner.add(pathElement);
+        }
+        return new File(joiner.toString());
     }
 }
