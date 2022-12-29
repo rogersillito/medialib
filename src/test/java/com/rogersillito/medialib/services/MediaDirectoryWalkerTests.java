@@ -2,17 +2,19 @@ package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
+import lombok.Getter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.io.File;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.StringJoiner;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -21,41 +23,51 @@ public class MediaDirectoryWalkerTests {
     private MediaDirectoryWalker sut;
 
     @Mock
-    AudioFileFactory mockedAudioFileFactory;
-    @Mock
     FileSystemUtils mockedFileSystemUtils;
-    private final String path = FileSystemUtils.joinPath("some", "path", "somewhere");
+    private final String basePath = FileSystemUtils.joinPath("some", "path", "somewhere");
+    private StubFactory stubFactory;
 
+    static class StubFactory implements AudioFileFactory {
+
+        @Getter
+        int callCount;
+
+        @Override
+        public AudioFile create(MediaDirectory parent, File file) {
+            callCount += 1;
+            return new AudioFile(parent, file.getName());
+        }
+    }
 
     @BeforeEach
     void arrange() {
         MockitoAnnotations.openMocks(this);
-        //TODO: pass the received MediaDirectory as the AudioFile's ctr param
-        when(mockedAudioFileFactory.create(any(MediaDirectory.class), any(File.class)))
-                .thenReturn(new AudioFile(null, "file.mp3"));
 
-        this.sut = new MediaDirectoryWalker(mockedAudioFileFactory, mockedFileSystemUtils);
+        this.stubFactory = new StubFactory();
+        this.sut = new MediaDirectoryWalker(this.stubFactory, mockedFileSystemUtils);
     }
 
     @Test
     public void whenPathInvalid_returnsEmpty() {
-        when(mockedFileSystemUtils.canWalk(path)).thenReturn(false);
-        var result = sut.walk(path);
+        when(mockedFileSystemUtils.canWalk(basePath)).thenReturn(false);
+        var result = sut.walk(basePath);
         assertTrue(result.isEmpty());
+        assertEquals(0, this.stubFactory.getCallCount());
     }
 
     @Test
     public void whenNoFilesOrDirectoriesFound_returnsMediaDirectoryWithNoContent() {
-        when(mockedFileSystemUtils.canWalk(path)).thenReturn(true);
-        when(mockedFileSystemUtils.getDirectories(path)).thenReturn(Collections.emptyList());
-        when(mockedFileSystemUtils.getFiles(path)).thenReturn(Collections.emptyList());
+        when(mockedFileSystemUtils.canWalk(basePath)).thenReturn(true);
+        when(mockedFileSystemUtils.getDirectories(basePath)).thenReturn(Collections.emptyList());
+        when(mockedFileSystemUtils.getFiles(basePath)).thenReturn(Collections.emptyList());
 
-        var result = sut.walk(path);
+        var result = sut.walk(basePath);
         assertTrue(result.isPresent());
-        assertEquals(path, result.get().getPath());
+        assertEquals(basePath, result.get().getPath());
 
         assertEquals(0, result.get().getDirectories().size());
         assertEquals(0, result.get().getFiles().size());
+        assertEquals(0, this.stubFactory.getCallCount());
     }
 
     @Test
@@ -64,34 +76,40 @@ public class MediaDirectoryWalkerTests {
         /some/path/somewhere
             /some/path/somewhere/A
                 /some/path/somewhere/A/C
-                /1a.mp3
-                /2a.mp3
+                    /1c.mp3
+                    /2c.mp3
             /some/path/somewhere/B
+                /some/path/somewhere/D
             /1.mp3
             /2.mp3
         */
         when(mockedFileSystemUtils.canWalk(anyString()))
                 .thenReturn(true);
 
-        when(mockedFileSystemUtils.getDirectories(path))
+        when(mockedFileSystemUtils.getDirectories(basePath))
                 .thenReturn(List.of(fileOrDirAtPath("A"), fileOrDirAtPath("B")));
-        when(mockedFileSystemUtils.getDirectories(FileSystemUtils.joinPath(path, "A")))
+        when(mockedFileSystemUtils.getDirectories(FileSystemUtils.joinPath(basePath, "A")))
                 .thenReturn(List.of(fileOrDirAtPath("A", "C")));
-        when(mockedFileSystemUtils.getDirectories(FileSystemUtils.joinPath("A", "B"))).thenReturn(List.of());
-        when(mockedFileSystemUtils.getDirectories(FileSystemUtils.joinPath("A", "C"))).thenReturn(List.of());
+        when(mockedFileSystemUtils.getDirectories(FileSystemUtils.joinPath(basePath, "A", "C")))
+                .thenReturn(List.of());
+        when(mockedFileSystemUtils.getDirectories(FileSystemUtils.joinPath(basePath, "B")))
+                .thenReturn(List.of(fileOrDirAtPath("B", "D")));
+        when(mockedFileSystemUtils.getDirectories(FileSystemUtils.joinPath(basePath, "B", "D")))
+                .thenReturn(List.of());
 
-        when(mockedFileSystemUtils.getFiles(path))
+        when(mockedFileSystemUtils.getFiles(basePath))
                 .thenReturn(List.of(
                         fileOrDirAtPath("1.mp3"),
                         fileOrDirAtPath("2.mp3")));
-        when(mockedFileSystemUtils.getFiles(FileSystemUtils.joinPath(path, "A")))
+        when(mockedFileSystemUtils.getFiles(FileSystemUtils.joinPath(basePath, "A"))).thenReturn(List.of());
+        when(mockedFileSystemUtils.getFiles(FileSystemUtils.joinPath(basePath, "B"))).thenReturn(List.of());
+        when(mockedFileSystemUtils.getFiles(FileSystemUtils.joinPath(basePath, "A", "C")))
                 .thenReturn(List.of(
-                        fileOrDirAtPath("A", "1a.mp3"),
-                        fileOrDirAtPath("A", "2a.mp3")));
-        when(mockedFileSystemUtils.getFiles(FileSystemUtils.joinPath(path, "B"))).thenReturn(List.of());
-        when(mockedFileSystemUtils.getFiles(FileSystemUtils.joinPath(path, "A", "C"))).thenReturn(List.of());
+                        fileOrDirAtPath("A", "C", "1c.mp3"),
+                        fileOrDirAtPath("A", "C", "2c.mp3")));
+        when(mockedFileSystemUtils.getFiles(FileSystemUtils.joinPath(basePath, "B", "D"))).thenReturn(List.of());
 
-        var result = sut.walk(path);
+        var result = sut.walk(basePath);
         assertTrue(result.isPresent());
         MediaDirectory topDir = result.get();
         assertEquals(2, topDir.getFiles().size());
@@ -99,14 +117,22 @@ public class MediaDirectoryWalkerTests {
         assertTrue(topDir.getDirectories().stream().findFirst().isPresent());
 
         var dirA = topDir.getDirectories().stream().findFirst().get();
-        assertEquals(FileSystemUtils.joinPath(path, "A"), dirA.getPath());
-        assertEquals(2, dirA.getFiles().size());
-        assertEquals(0, dirA.getDirectories().size());
+        assertEquals(FileSystemUtils.joinPath(basePath, "A"), dirA.getPath());
+        assertEquals(0, dirA.getFiles().size());
+        assertEquals(1, dirA.getDirectories().size());
+        assertTrue(dirA.getDirectories().stream().findFirst().isPresent());
+
+        var dirC = dirA.getDirectories().stream().findFirst().get();
+        assertEquals(FileSystemUtils.joinPath(basePath, "A", "C"), dirC.getPath());
+        assertEquals(2, dirC.getFiles().size());
+        assertEquals(0, dirC.getDirectories().size());
+
+        assertEquals(4, this.stubFactory.getCallCount());
     }
 
     File fileOrDirAtPath(String... pathElements) {
         var joiner = new StringJoiner(File.separator);
-        joiner.add(this.path);
+        joiner.add(this.basePath);
         for (String pathElement:
                 pathElements) {
             joiner.add(pathElement);

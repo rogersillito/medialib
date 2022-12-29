@@ -9,7 +9,7 @@ import lombok.*;
 public abstract class MediaFile {
 
     final MediaDirectory parent;
-    @NonNull String fileName;
+    final String fileName;
 
     String getFilePath() {
         return FileSystemUtils.joinPath(parent.getPath(), fileName);
