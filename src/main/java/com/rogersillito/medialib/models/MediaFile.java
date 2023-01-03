@@ -10,6 +10,7 @@ public abstract class MediaFile {
 
     final MediaDirectory parent;
     final String fileName;
+    private String type;
 
     String getFilePath() {
         return FileSystemUtils.joinPath(parent.getPath(), fileName);
