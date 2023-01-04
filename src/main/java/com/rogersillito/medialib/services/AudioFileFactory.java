@@ -4,7 +4,8 @@ import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
 
 import java.io.File;
+import java.util.Optional;
 
 public interface AudioFileFactory {
-    AudioFile create(MediaDirectory parent, File file) throws RuntimeException;
+    Optional<AudioFile> create(MediaDirectory parent, File file) throws RuntimeException;
 }

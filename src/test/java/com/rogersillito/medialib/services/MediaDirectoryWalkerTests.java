@@ -2,19 +2,23 @@ package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
+import com.rogersillito.medialib.models.MediaFile;
 import lombok.Getter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.StringJoiner;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -33,9 +37,12 @@ public class MediaDirectoryWalkerTests {
         int callCount;
 
         @Override
-        public AudioFile create(MediaDirectory parent, File file) {
+        public Optional<AudioFile> create(MediaDirectory parent, File file) {
             callCount += 1;
-            return new AudioFile(parent, file.getName());
+            if (file.getName().contains("FAIL")) {
+                return Optional.empty();
+            }
+            return Optional.of(new AudioFile(parent, file.getName()));
         }
     }
 
@@ -68,6 +75,25 @@ public class MediaDirectoryWalkerTests {
         assertEquals(0, result.get().getDirectories().size());
         assertEquals(0, result.get().getFiles().size());
         assertEquals(0, this.stubFactory.getCallCount());
+    }
+
+    @Test
+    public void whenRuntimeExceptionCreatingFile_returnsMediaDirectorySkippingFile() {
+        when(mockedFileSystemUtils.canWalk(basePath)).thenReturn(true);
+        when(mockedFileSystemUtils.getDirectories(basePath)).thenReturn(Collections.emptyList());
+        when(mockedFileSystemUtils.getFiles(basePath))
+                .thenReturn(List.of(
+                        fileOrDirAtPath("1.mp3"),
+                        fileOrDirAtPath("FAIL.mp3"),
+                        fileOrDirAtPath("3.mp3")));
+
+        var result = sut.walk(basePath);
+        assertThat(result.isPresent(), is(true));
+        assertThat(result.get().getPath(), is(equalTo(basePath)));
+        assertThat(result.get().getDirectories(), is(empty()));
+        assertThat(result.get().getFiles(), hasSize(2));
+        assertThat(this.stubFactory.getCallCount(), is(equalTo(3)));
+        assertThat(result.get().getFiles().stream().map(MediaFile::getFileName).toList(), not(hasItem("FAIL.mp3")));
     }
 
     @Test

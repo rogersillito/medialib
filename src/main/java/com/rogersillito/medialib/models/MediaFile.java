@@ -12,6 +12,7 @@ public abstract class MediaFile {
     final String fileName;
     private String type;
 
+    //TODO: is there a way to get this json-encoded too?
     String getFilePath() {
         return FileSystemUtils.joinPath(parent.getPath(), fileName);
     }

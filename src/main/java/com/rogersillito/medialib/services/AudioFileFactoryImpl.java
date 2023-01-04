@@ -2,6 +2,7 @@ package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
+import lombok.extern.slf4j.Slf4j;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
@@ -14,23 +15,22 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class AudioFileFactoryImpl implements AudioFileFactory {
     @Override
-    public AudioFile create(MediaDirectory parent, File file) throws RuntimeException {
+    public Optional<AudioFile> create(MediaDirectory parent, File file) throws RuntimeException {
         var audioFile = new AudioFile(parent, file.getName());
         org.jaudiotagger.audio.AudioFile jatAudioFile;
         try {
             jatAudioFile = AudioFileIO.read(file);
         } catch (CannotReadException | IOException | TagException | ReadOnlyFileException |
                  InvalidAudioFrameException e) {
-
-            //TODO: handling of CannotReadVideoException (e.g. MP4)
-            System.out.printf("Could not process Audio file: %s%n", file.getPath());
-            throw new RuntimeException(e);
+            log.warn("Could not process Audio file: {}. {}, {}", file.getPath(), e.getClass().getName(), e.getMessage());
+            return Optional.empty();
         }
         setMetadata(audioFile, jatAudioFile);
-        return audioFile;
+        return Optional.of(audioFile);
     }
 
     private Optional<String> getFirstOfField(Tag tag, FieldKey fieldKey) {

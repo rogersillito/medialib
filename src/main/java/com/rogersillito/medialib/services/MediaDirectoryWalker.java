@@ -36,7 +36,7 @@ public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
         }
         for (File file :
                 fileSystemUtils.getFiles(path)) {
-            mediaFiles.add(audioFileFactory.create(thisDirectory, file));
+            audioFileFactory.create(thisDirectory, file).ifPresent(mediaFiles::add);
         }
         if (depth == 0 || mediaFiles.size() > 0 || subdirectories.size() > 0) {
             thisDirectory.setDirectories(subdirectories);
