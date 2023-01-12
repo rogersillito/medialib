@@ -42,7 +42,10 @@ public class MediaDirectoryWalkerTests {
             if (file.getName().contains("FAIL")) {
                 return Optional.empty();
             }
-            return Optional.of(new AudioFile(parent, file.getName()));
+            AudioFile audioFile = new AudioFile();
+            audioFile.setParent(parent);
+            audioFile.setFileName(file.getName());
+            return Optional.of(audioFile);
         }
     }
 

@@ -17,10 +17,12 @@ import java.util.Optional;
 
 @Slf4j
 @Service
-public class AudioFileFactoryImpl implements AudioFileFactory {
+public class DefaultAudioFileFactory implements AudioFileFactory {
     @Override
     public Optional<AudioFile> create(MediaDirectory parent, File file) throws RuntimeException {
-        var audioFile = new AudioFile(parent, file.getName());
+        var audioFile = new AudioFile();
+        audioFile.setParent(parent);
+        audioFile.setFileName(file.getName());
         org.jaudiotagger.audio.AudioFile jatAudioFile;
         try {
             jatAudioFile = AudioFileIO.read(file);
