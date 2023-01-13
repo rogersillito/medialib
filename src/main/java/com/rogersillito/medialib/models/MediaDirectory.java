@@ -13,6 +13,6 @@ public class MediaDirectory {
 //    @Setter(AccessLevel.PRIVATE)
 //    private UUID id;
     List<MediaDirectory> directories = new ArrayList<>();
-    List<? extends MediaFile> files = new ArrayList<>();
+    List<MediaFile> files = new ArrayList<>();
     String path;
 }

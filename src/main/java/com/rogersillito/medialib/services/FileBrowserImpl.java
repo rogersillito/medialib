@@ -18,6 +18,6 @@ public class FileBrowserImpl implements FileBrowser {
 
         Optional<MediaDirectory> directory = dirWalker.walk(path);
         //TODO: test this behaviour
-        return directory.map(OperationResult::successResult).orElseGet(() -> OperationResult.failureResult("Directory path either empty or not found"));
+        return directory.map(OperationResult::successResult).orElseGet(() -> OperationResult.failureResult("Directory path not found"));
     }
 }
