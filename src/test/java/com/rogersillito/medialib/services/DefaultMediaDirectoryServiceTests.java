@@ -4,12 +4,14 @@ import com.rogersillito.medialib.common.OperationResult;
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
 import com.rogersillito.medialib.repositories.AudioFileRepository;
+import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -22,6 +24,8 @@ class DefaultMediaDirectoryServiceTests {
     @Mock
     private AudioFileRepository mockAudioFileRepository;
     @Mock
+    private MediaDirectoryRepository mockMediaDirectoryRepository;
+    @Mock
     private FileBrowser mockFileBrowser;
     private DefaultMediaDirectoryService sut;
     private MediaDirectory mediaDirectory;
@@ -33,16 +37,14 @@ class DefaultMediaDirectoryServiceTests {
     void arrange() {
         MockitoAnnotations.openMocks(this);
         audioFilesNotPersisted = new ArrayList<>();
-        this.sut = new DefaultMediaDirectoryService(this.mockAudioFileRepository, this.mockFileBrowser);
+        this.sut = new DefaultMediaDirectoryService(this.mockAudioFileRepository, this.mockMediaDirectoryRepository, this.mockFileBrowser);
     }
-
-    //TODO: test for empty dir
-
 
     @Test
     void whenNestedFilesFoundAtPath_persistsAllFiles() {
         var dirD = new MediaDirectoryBuilder()
                 .atRelativePath("d")
+                .withAudioFile(audioFile(5))
                 .build();
 
         var dirC = new MediaDirectoryBuilder()
@@ -72,9 +74,12 @@ class DefaultMediaDirectoryServiceTests {
 
         var result = sut.saveDirectoryStructure(path);
 
-		verify(this.mockAudioFileRepository, times(5)).saveAll(argThat(this::setFilesPersisted));
+		verify(this.mockAudioFileRepository, times(5))
+                .saveAll(argThat(this::setFilesPersisted));
+        verify(this.mockMediaDirectoryRepository, times(5))
+                .save(argThat(d -> Arrays.asList(dirA, dirB, dirC, dirD, mediaDirectory).contains(d)));
         assertThat(this.audioFilesNotPersisted, hasSize(0));
-        assertThat(result, equalTo(4));
+        assertThat(result, equalTo(5));
     }
 
     AudioFile audioFile(Integer title) {
