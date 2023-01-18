@@ -2,8 +2,8 @@ package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
-import com.rogersillito.medialib.models.MediaFile;
 import com.rogersillito.medialib.repositories.AudioFileRepository;
+import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import java.util.List;
 public class DefaultMediaDirectoryService implements MediaDirectoryService {
 
     private final @NonNull AudioFileRepository audioFileRepository;
+    private final @NonNull MediaDirectoryRepository mediaDirectoryRepository;
     private final @NonNull FileBrowser fileBrowser;
 
     @Override
@@ -30,6 +31,7 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
     }
 
     private int persistDirectory(MediaDirectory directory) {
+        this.mediaDirectoryRepository.save(directory);
         int saveCount = persistAudioFiles(directory.getFiles());
         for (var subDirectory :
                 directory.getDirectories()) {
@@ -38,12 +40,8 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
         return saveCount;
     }
 
-    private int persistAudioFiles(List<MediaFile> mediaFiles) {
-        var files = mediaFiles.stream()
-                .filter(f -> f instanceof AudioFile)
-                .map(AudioFile.class::cast)
-                .toList();
-        this.audioFileRepository.saveAll(files);
-        return files.size();
+    private int persistAudioFiles(List<AudioFile> audioFiles) {
+        this.audioFileRepository.saveAll(audioFiles);
+        return audioFiles.size();
     }
 }

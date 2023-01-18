@@ -2,11 +2,11 @@ package com.rogersillito.medialib.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.rogersillito.medialib.services.FileSystemUtils;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Transient;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.CascadeType;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
 
@@ -16,19 +16,16 @@ import java.util.UUID;
 public class AudioFile implements MediaFile {
 
     @Id
-    @Setter(AccessLevel.PRIVATE)
+    @GeneratedValue
+    @UuidGenerator
+    @Setter(AccessLevel.PRIVATE) //TODO: NHibernate happy with this??
     private UUID id;
 
-    @NonNull
-    @Transient //TODO: persist this relationship
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @Cascade({CascadeType.SAVE_UPDATE})
     private MediaDirectory parent;
-    @NonNull
     @Column(length=3000)
     private String fileName;
-
-    public AudioFile() {
-        this.id = UUID.randomUUID();
-    }
 
     @Override
     @SuppressWarnings("unused")

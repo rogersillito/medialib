@@ -1,13 +1,14 @@
 package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.models.MediaDirectory;
-import com.rogersillito.medialib.models.MediaFile;
+import com.rogersillito.medialib.models.AudioFile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,8 +28,8 @@ public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
         }
         var thisDirectory = new MediaDirectory();
         thisDirectory.setPath(path);
-        var subdirectories = new ArrayList<MediaDirectory>();
-        var mediaFiles = new ArrayList<MediaFile>();
+        List<MediaDirectory> subdirectories = new ArrayList<>();
+        List<AudioFile> audioFiles = new ArrayList<>();
         var subDirDepth = depth + 1;
         for (File directory :
                 fileSystemUtils.getDirectories(path)) {
@@ -36,11 +37,11 @@ public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
         }
         for (File file :
                 fileSystemUtils.getFiles(path)) {
-            audioFileFactory.create(thisDirectory, file).ifPresent(mediaFiles::add);
+            audioFileFactory.create(thisDirectory, file).ifPresent(audioFiles::add);
         }
-        if (depth == 0 || mediaFiles.size() > 0 || subdirectories.size() > 0) {
+        if (depth == 0 || audioFiles.size() > 0 || subdirectories.size() > 0) {
             thisDirectory.setDirectories(subdirectories);
-            thisDirectory.setFiles(mediaFiles);
+            thisDirectory.setFiles(audioFiles);
             return Optional.of(thisDirectory);
         }
         return Optional.empty();
