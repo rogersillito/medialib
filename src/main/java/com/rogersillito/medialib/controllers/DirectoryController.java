@@ -1,6 +1,6 @@
 package com.rogersillito.medialib.controllers;
 
-import com.rogersillito.medialib.models.MediaDirectory;
+import com.rogersillito.medialib.models.MediaDirectoryClientResponse;
 import com.rogersillito.medialib.services.FileSystemUtils;
 import com.rogersillito.medialib.services.MediaDirectoryService;
 import lombok.NonNull;
@@ -23,8 +23,7 @@ public class DirectoryController {
     //TODO: try out testing the controller?
 
     @GetMapping
-    public ResponseEntity<MediaDirectory> get(@RequestParam("path") String path) {
-        //TODO: make this not be recursive (only the directory requested)
+    public ResponseEntity<MediaDirectoryClientResponse> get(@RequestParam("path") String path) {
         var directory = this.mediaDirectoryService.getMediaDirectory(path);
         return directory.map(md -> new ResponseEntity<>(md, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));

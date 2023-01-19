@@ -5,6 +5,6 @@ import org.springframework.data.repository.CrudRepository;
 
 import java.util.UUID;
 
-public interface MediaDirectoryRepository extends CrudRepository<MediaDirectory, UUID> {
+public interface MediaDirectoryRepository extends CrudRepository<MediaDirectory, UUID>, MediaDirectoryRepositoryCustom {
     MediaDirectory findByPath(String path);
 }

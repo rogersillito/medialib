@@ -2,6 +2,7 @@ package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
+import com.rogersillito.medialib.models.MediaDirectoryClientResponse;
 import com.rogersillito.medialib.repositories.AudioFileRepository;
 import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
 import jakarta.inject.Inject;
@@ -38,8 +39,8 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
     }
 
     @Override
-    public Optional<MediaDirectory> getMediaDirectory(String path) {
-        var mediaDirectory = this.mediaDirectoryRepository.findByPath(path);
+    public Optional<MediaDirectoryClientResponse> getMediaDirectory(String path) {
+        var mediaDirectory = this.mediaDirectoryRepository.findMediaDirectoryClientResponseByPath(path);
         if (mediaDirectory == null) {
             return Optional.empty();
         }
