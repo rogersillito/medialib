@@ -1,7 +1,7 @@
 package com.rogersillito.medialib.controllers;
 
 import com.rogersillito.medialib.models.MediaDirectory;
-import com.rogersillito.medialib.services.FileBrowser;
+import com.rogersillito.medialib.services.FileSystemUtils;
 import com.rogersillito.medialib.services.MediaDirectoryService;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/directories")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class DirectoryController {
-    private final @NonNull FileBrowser fileBrowserService;
+    private final @NonNull FileSystemUtils fileSystemUtils;
 
     private final @NonNull MediaDirectoryService mediaDirectoryService;
 
@@ -24,17 +24,18 @@ public class DirectoryController {
 
     @GetMapping
     public ResponseEntity<MediaDirectory> get(@RequestParam("path") String path) {
-        var directory = this.fileBrowserService.getDirectory(path);
-        if (directory.isSuccess()) {
-            return new ResponseEntity<>(directory.getData(), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        //TODO: make this not be recursive (only the directory requested)
+        var directory = this.mediaDirectoryService.getMediaDirectory(path);
+        return directory.map(md -> new ResponseEntity<>(md, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @PutMapping("refresh")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<Integer> refresh(@RequestParam("path") String path) {
-        //TODO: handle non-existent dir
+        if (!this.fileSystemUtils.canWalk(path)) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
         var result = mediaDirectoryService.saveDirectoryStructure(path);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

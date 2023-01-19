@@ -4,15 +4,17 @@ import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
 import com.rogersillito.medialib.repositories.AudioFileRepository;
 import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
+import jakarta.inject.Inject;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor(onConstructor = @__(@Inject))
 public class DefaultMediaDirectoryService implements MediaDirectoryService {
 
     private final @NonNull AudioFileRepository audioFileRepository;
@@ -20,14 +22,28 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
     private final @NonNull FileBrowser fileBrowser;
 
     @Override
+    @Transactional
     public int saveDirectoryStructure(String path) {
         //TODO: instead update if files already persisted
         var directory = this.fileBrowser.getDirectory(path);
         if (directory.isSuccess()) {
+            var existingDirectory = this.mediaDirectoryRepository.findByPath(path);
+            if (existingDirectory != null) {
+                this.mediaDirectoryRepository.delete(existingDirectory);
+            }
             return persistDirectory(directory.getData());
         }
         //TODO: return - inserted, updated, deleted?
         return 0;
+    }
+
+    @Override
+    public Optional<MediaDirectory> getMediaDirectory(String path) {
+        var mediaDirectory = this.mediaDirectoryRepository.findByPath(path);
+        if (mediaDirectory == null) {
+            return Optional.empty();
+        }
+        return Optional.of(mediaDirectory);
     }
 
     private int persistDirectory(MediaDirectory directory) {
