@@ -1,13 +1,21 @@
 package com.rogersillito.medialib.models;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 
+import java.util.List;
 import java.util.UUID;
 
-@Data
 @AllArgsConstructor
+@Getter
 public class MediaDirectoryClientResponse {
     private UUID id;
     private String path;
+    private List<AudioFile> files;
+    @AllArgsConstructor
+    @Getter
+    public static class AudioFile {
+        private UUID id;
+        private String fileName;
+    }
 }
