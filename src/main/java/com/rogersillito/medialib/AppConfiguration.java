@@ -4,9 +4,17 @@ import com.rogersillito.medialib.common.InstantiationTracingBeanPostProcessor;
 import org.jaudiotagger.audio.AudioFileFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
 
 import java.io.FileFilter;
 
+@EnableWebSecurity
 @Configuration
 @SuppressWarnings("unused")
 public class AppConfiguration {
@@ -18,5 +26,31 @@ public class AppConfiguration {
     @Bean()
     public InstantiationTracingBeanPostProcessor instantiationTracingBeanPostProcessor() {
         return new InstantiationTracingBeanPostProcessor();
+    }
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.authorizeHttpRequests()
+//                .requestMatchers("/api/v1/directories").permitAll()
+//                .requestMatchers("/api/v1/directories").authenticated()
+                .anyRequest().hasRole("USER")
+                    .and()
+                .httpBasic()
+                    .and()
+                .csrf().disable()
+        ;
+        return http.build();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        // basic user config for testing
+        UserDetails user =
+                User.withDefaultPasswordEncoder()
+                        .username("medialibuser")
+                        .password("password")
+                        .roles("USER")
+                        .build();
+
+        return new InMemoryUserDetailsManager(user);
     }
 }
