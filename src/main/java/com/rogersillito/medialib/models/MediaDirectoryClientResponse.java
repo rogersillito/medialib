@@ -12,6 +12,7 @@ public class MediaDirectoryClientResponse {
     private UUID id;
     private String path;
     private List<AudioFile> files;
+    //TODO: include dirs as well..
     @AllArgsConstructor
     @Getter
     public static class AudioFile {

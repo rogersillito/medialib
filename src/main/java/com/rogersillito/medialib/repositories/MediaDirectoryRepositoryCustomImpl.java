@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
+//TODO: needs some test coverage!
 public class MediaDirectoryRepositoryCustomImpl implements MediaDirectoryRepositoryCustom {
 // a custom fragment repository that's pulled into MediaDirectoryRepository via the magic of spring data
     private final EntityManager entityManager;
@@ -33,6 +34,9 @@ public class MediaDirectoryRepositoryCustomImpl implements MediaDirectoryReposit
                 .setParameter(1, path);
         try {
             var res = query.getResultList();
+            if (res.isEmpty()) {
+                return null;
+            }
             return convertResult(res);
         } catch (NoResultException nre) {
             return null;
