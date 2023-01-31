@@ -14,7 +14,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 import java.io.FileFilter;
 
-@EnableWebSecurity
+//@EnableWebSecurity
 @Configuration
 @SuppressWarnings("unused")
 public class AppConfiguration {
@@ -30,7 +30,7 @@ public class AppConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests()
-                .requestMatchers("/api/v1/directories/*")
+                .requestMatchers("/api/v1/directories", "/api/v1/directories/*")
                 .hasRole("USER")
 ////              // allow any authenticated users
 //                .authenticated()
