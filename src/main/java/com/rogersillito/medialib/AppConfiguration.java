@@ -30,9 +30,15 @@ public class AppConfiguration {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests()
-//                .requestMatchers("/api/v1/directories").permitAll()
-//                .requestMatchers("/api/v1/directories").authenticated()
-                .anyRequest().hasRole("USER")
+                .requestMatchers("/api/v1/directories/*")
+                .hasRole("USER")
+////              // allow any authenticated users
+//                .authenticated()
+//                // define a separate rule chain that would given open occess to URL /public/*
+//                    .and()
+//                .authorizeHttpRequests()
+//                .requestMatchers("/api/v1/public/*")
+//                .permitAll()
                     .and()
                 .httpBasic()
                     .and()
