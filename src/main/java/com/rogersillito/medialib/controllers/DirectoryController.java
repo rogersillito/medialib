@@ -1,6 +1,6 @@
 package com.rogersillito.medialib.controllers;
 
-import com.rogersillito.medialib.models.MediaDirectoryClientResponse;
+import com.rogersillito.medialib.dtos.MediaDirectoryClientResponse;
 import com.rogersillito.medialib.services.FileSystemUtils;
 import com.rogersillito.medialib.services.MediaDirectoryService;
 import lombok.NonNull;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/directories")
+@RequestMapping("/api/v1/directory")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class DirectoryController {
     private final @NonNull FileSystemUtils fileSystemUtils;
@@ -29,7 +29,7 @@ public class DirectoryController {
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    @PutMapping("refresh")
+    @PutMapping
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<Integer> refresh(@RequestParam("path") String path) {
         if (!this.fileSystemUtils.canWalk(path)) {

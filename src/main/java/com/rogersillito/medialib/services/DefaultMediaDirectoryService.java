@@ -2,7 +2,7 @@ package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
-import com.rogersillito.medialib.models.MediaDirectoryClientResponse;
+import com.rogersillito.medialib.dtos.MediaDirectoryClientResponse;
 import com.rogersillito.medialib.repositories.AudioFileRepository;
 import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
 import jakarta.inject.Inject;

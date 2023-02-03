@@ -1,6 +1,6 @@
 package com.rogersillito.medialib.repositories;
 
-import com.rogersillito.medialib.models.MediaDirectoryClientResponse;
+import com.rogersillito.medialib.dtos.MediaDirectoryClientResponse;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;

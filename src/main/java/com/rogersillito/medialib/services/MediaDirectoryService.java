@@ -1,6 +1,6 @@
 package com.rogersillito.medialib.services;
 
-import com.rogersillito.medialib.models.MediaDirectoryClientResponse;
+import com.rogersillito.medialib.dtos.MediaDirectoryClientResponse;
 
 import java.util.Optional;
 

@@ -1,4 +1,4 @@
-package com.rogersillito.medialib.models;
+package com.rogersillito.medialib.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
