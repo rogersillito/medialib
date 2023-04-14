@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
 //TODO: needs some test coverage!
-public class DefaultMediaDirectoryRepositoryCustom implements MediaDirectoryRepositoryCustom {
+public class MediaDirectoryRepositoryCustomImpl implements MediaDirectoryRepositoryCustom {
 // a custom fragment repository that's pulled into MediaDirectoryRepository via the magic of spring data
     private final EntityManager entityManager;
 
