@@ -10,7 +10,9 @@ import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
+@ToString
 @Entity
 @JsonIgnoreProperties(value = { "parent" })
 public class AudioFile implements MediaFile {
@@ -18,11 +20,12 @@ public class AudioFile implements MediaFile {
     @Id
     @GeneratedValue
     @UuidGenerator
-    @Setter(AccessLevel.PRIVATE) //TODO: NHibernate happy with this??
+    @Setter(AccessLevel.PRIVATE) //TODO: Hibernate happy with this??
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @Cascade({CascadeType.SAVE_UPDATE})
+    @ToString.Exclude
     private MediaDirectory parent;
     @Column(length=3000)
     private String fileName;

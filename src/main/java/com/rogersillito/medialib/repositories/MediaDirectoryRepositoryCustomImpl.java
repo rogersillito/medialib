@@ -49,7 +49,7 @@ public class MediaDirectoryRepositoryCustomImpl implements MediaDirectoryReposit
         var files = results.stream().filter(r -> r.get("fileId") != null).map(r -> {
             var fileId = (UUID)r.get("fileId");
             var fileName = (String)r.get("fileName");
-            return new MediaDirectoryClientResponse.AudioFile(fileId, fileName);
+            return new MediaDirectoryClientResponse.AudioFileClientResponse(fileId, fileName);
         }).toList();
         return new MediaDirectoryClientResponse(dirId, dirPath, files);
     }
