@@ -19,6 +19,11 @@ public class MediaDirectory {
     @Setter(AccessLevel.PRIVATE) //TODO: Hibernate happy with this??
     private UUID id;
 
+//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+//    @Cascade({ org.hibernate.annotations.CascadeType.SAVE_UPDATE})
+//    @ToString.Exclude
+//    private MediaDirectory parent;
+
     @NonNull
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MediaDirectory> directories = new ArrayList<>();

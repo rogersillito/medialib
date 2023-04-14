@@ -25,17 +25,23 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
     @Override
     @Transactional
     public int saveDirectoryStructure(String path) {
-        //TODO: instead update if files already persisted
         var directory = this.fileBrowser.getDirectory(path);
         if (directory.isSuccess()) {
-            var existingDirectory = this.mediaDirectoryRepository.findByPath(path);
-            if (existingDirectory != null) {
-                this.mediaDirectoryRepository.delete(existingDirectory);
-            }
-            return persistDirectory(directory.getData());
+            return saveDirectoryStructure(directory.getData());
         }
         //TODO: return - inserted, updated, deleted?
         return 0;
+    }
+
+    @Override
+    @Transactional
+    public int saveDirectoryStructure(MediaDirectory directory) {
+        var existingDirectory = this.mediaDirectoryRepository.findByPath(directory.getPath());
+        //TODO: instead update if files already persisted
+        if (existingDirectory != null) {
+            this.mediaDirectoryRepository.delete(existingDirectory);
+        }
+        return persistDirectory(directory);
     }
 
     @Override

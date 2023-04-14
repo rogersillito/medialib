@@ -38,3 +38,4 @@ out/
 
 # generated db files
 /generatedSchema/
+/h2db.mv.db
