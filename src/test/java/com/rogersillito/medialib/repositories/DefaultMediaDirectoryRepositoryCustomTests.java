@@ -7,7 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(properties = { "command.line.runner.enabled=false" })
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+
+@SpringBootTest
 public class DefaultMediaDirectoryRepositoryCustomTests {
 
     @Autowired
@@ -45,8 +48,7 @@ public class DefaultMediaDirectoryRepositoryCustomTests {
     void DefaultMediaDirectoryRepositoryCustom_findMediaDirectoryClientResponseByPath_returnsExpected() {
         setupData();
         var result = mediaDirectoryRepository.findMediaDirectoryClientResponseByPath("/some/media/dir1");
-
-//        repository.saveCustomers(repository);
-//        assertThat(null, hasSize(5));
+        assertThat(result, is(notNullValue()));
+        assertThat(result.getFiles(), hasSize(2));
     }
 }
