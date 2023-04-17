@@ -22,10 +22,16 @@ public class MediaDirectoryRepositoryCustomImpl implements MediaDirectoryReposit
         String jpqlQuery = """
                 SELECT  md.id AS id,
                         md.path AS path,
+                        pd.id AS parentId,
+                        pd.path AS parentPath,
                         af.id AS fileId,
-                        af.fileName AS fileName
+                        af.fileName AS fileName,
+                        cd.id AS childDirId,
+                        cd.path AS childDirPath
                 FROM MediaDirectory md
+                LEFT JOIN MediaDirectory pd ON pd.id = md.parent.id
                 LEFT JOIN AudioFile af ON af.parent.id = md.id
+                LEFT JOIN MediaDirectory cd ON cd.parent.id = md.id
                 WHERE md.path = ?1
                 """;
         TypedQuery<Tuple> query = entityManager
@@ -45,11 +51,26 @@ public class MediaDirectoryRepositoryCustomImpl implements MediaDirectoryReposit
     private MediaDirectoryClientResponse convertResult(List<Tuple> results) {
         var dirId = (UUID)results.get(0).get("id");
         var dirPath = (String)results.get(0).get("path");
+
+        MediaDirectoryClientResponse.Directory parent = null;
+        if (results.get(0).get("parentId") != null) {
+            var parentId = (UUID) results.get(0).get("parentId");
+            var parentPath = (String) results.get(0).get("parentPath");
+            parent = new MediaDirectoryClientResponse.Directory(parentId, parentPath);
+        }
+
         var files = results.stream().filter(r -> r.get("fileId") != null).map(r -> {
             var fileId = (UUID)r.get("fileId");
             var fileName = (String)r.get("fileName");
-            return new MediaDirectoryClientResponse.AudioFileClientResponse(fileId, fileName);
+            return new MediaDirectoryClientResponse.File(fileId, fileName);
         }).toList();
-        return new MediaDirectoryClientResponse(dirId, dirPath, files);
+
+        var childDirs = results.stream().filter(r -> r.get("childDirId") != null).map(r -> {
+            var childDirId = (UUID)r.get("childDirId");
+            var childDirPath = (String)r.get("childDirPath");
+            return new MediaDirectoryClientResponse.Directory(childDirId, childDirPath);
+        }).toList();
+
+        return new MediaDirectoryClientResponse(dirId, dirPath, parent, files, childDirs);
     }
 }

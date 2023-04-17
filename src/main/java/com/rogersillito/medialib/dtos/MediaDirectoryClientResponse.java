@@ -11,12 +11,20 @@ import java.util.UUID;
 public class MediaDirectoryClientResponse {
     private UUID id;
     private String path;
-    private List<AudioFileClientResponse> files;
-    //TODO: include dirs as well..
+    private Directory parent;
+    private List<File> files;
+    private List<Directory> directories;
     @AllArgsConstructor
     @Getter
-    public static class AudioFileClientResponse {
+    public static class File {
         private UUID id;
         private String fileName;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    public static class Directory {
+        private UUID id;
+        private String path;
     }
 }

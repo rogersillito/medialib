@@ -42,6 +42,8 @@ public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
         if (depth == 0 || audioFiles.size() > 0 || subdirectories.size() > 0) {
             thisDirectory.setDirectories(subdirectories);
             thisDirectory.setFiles(audioFiles);
+            subdirectories.forEach(sd -> sd.setParent(thisDirectory));
+            audioFiles.forEach(sd -> sd.setParent(thisDirectory));
             return Optional.of(thisDirectory);
         }
         return Optional.empty();
