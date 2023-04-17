@@ -4,6 +4,7 @@ import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
 import com.rogersillito.medialib.services.MediaDirectoryService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -11,6 +12,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 @SpringBootTest
+@Tag("Integration")
 public class DefaultMediaDirectoryRepositoryCustomTests {
 
     @Autowired
