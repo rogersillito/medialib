@@ -1,8 +1,8 @@
 package com.rogersillito.medialib.services;
 
+import com.rogersillito.medialib.dtos.MediaDirectoryWithRelations;
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
-import com.rogersillito.medialib.dtos.MediaDirectoryClientResponse;
 import com.rogersillito.medialib.repositories.AudioFileRepository;
 import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
 import jakarta.inject.Inject;
@@ -25,25 +25,40 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
     @Override
     @Transactional
     public int saveDirectoryStructure(String path) {
-        //TODO: instead update if files already persisted
         var directory = this.fileBrowser.getDirectory(path);
         if (directory.isSuccess()) {
-            var existingDirectory = this.mediaDirectoryRepository.findByPath(path);
-            if (existingDirectory != null) {
-                this.mediaDirectoryRepository.delete(existingDirectory);
-            }
-            return persistDirectory(directory.getData());
+            return saveDirectoryStructure(directory.getData());
         }
         //TODO: return - inserted, updated, deleted?
         return 0;
     }
 
     @Override
-    public Optional<MediaDirectoryClientResponse> getMediaDirectory(String path) {
-        var mediaDirectory = this.mediaDirectoryRepository.findMediaDirectoryClientResponseByPath(path);
+    @Transactional
+    public int saveDirectoryStructure(MediaDirectory directory) {
+        //TODO: instead update if files already persisted
+        deleteDirectoryStructure(directory.getPath());
+        return persistDirectory(directory);
+    }
+
+    @Override
+    public void deleteDirectoryStructure(String path) {
+        var existingDirectory = this.mediaDirectoryRepository.findByPath(path);
+        if (existingDirectory != null) {
+            this.mediaDirectoryRepository.delete(existingDirectory);
+        }
+    }
+
+    @Override
+    public Optional<MediaDirectoryWithRelations> getMediaDirectory(String path) {
+        var mediaDirectory = this.mediaDirectoryRepository.findWithDirectoryRelationsByPath(path);
         if (mediaDirectory == null) {
             return Optional.empty();
         }
+
+        var files = this.audioFileRepository.findAllByParentPath(path);
+        mediaDirectory.setFiles(files.stream().toList());
+
         return Optional.of(mediaDirectory);
     }
 
