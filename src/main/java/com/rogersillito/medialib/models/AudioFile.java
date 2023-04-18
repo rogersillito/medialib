@@ -20,7 +20,7 @@ public class AudioFile implements MediaFile {
     @Id
     @GeneratedValue
     @UuidGenerator
-    @Setter(AccessLevel.PRIVATE) //TODO: Hibernate happy with this??
+    @Setter(AccessLevel.PRIVATE)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

@@ -2,6 +2,7 @@ package com.rogersillito.medialib.models;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.ArrayList;
@@ -16,11 +17,15 @@ public class MediaDirectory {
     @Id
     @GeneratedValue
     @UuidGenerator
-    @Setter(AccessLevel.PRIVATE) //TODO: Hibernate happy with this??
+    @Setter(AccessLevel.PRIVATE)
     private UUID id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @Cascade({ org.hibernate.annotations.CascadeType.SAVE_UPDATE})
+    private MediaDirectory parent;
+
     @NonNull
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "parent")
     private List<MediaDirectory> directories = new ArrayList<>();
 
     @NonNull
