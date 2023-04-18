@@ -1,6 +1,6 @@
 package com.rogersillito.medialib.services;
 
-import com.rogersillito.medialib.dtos.MediaDirectoryClientResponse;
+import com.rogersillito.medialib.dtos.MediaDirectoryWithRelations;
 import com.rogersillito.medialib.models.MediaDirectory;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,5 +14,8 @@ public interface MediaDirectoryService {
     @Transactional
     int saveDirectoryStructure(MediaDirectory directory);
 
-    Optional<MediaDirectoryClientResponse> getMediaDirectory(String path);
+    @Transactional
+    void deleteDirectoryStructure(String path);
+
+    Optional<MediaDirectoryWithRelations> getMediaDirectory(String path);
 }

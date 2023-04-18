@@ -1,6 +1,6 @@
 package com.rogersillito.medialib.repositories;
 
-import com.rogersillito.medialib.dtos.MediaDirectoryClientResponse;
+import com.rogersillito.medialib.dtos.MediaDirectoryWithRelations;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -17,22 +17,20 @@ public class MediaDirectoryRepositoryCustomImpl implements MediaDirectoryReposit
     private final EntityManager entityManager;
 
     @Override
-    public MediaDirectoryClientResponse findMediaDirectoryClientResponseByPath(String path) {
+    public MediaDirectoryWithRelations findWithDirectoryRelationsByPath(String path) {
         // use JPQL querying API to get joined results and the return as a structured DTO
         String jpqlQuery = """
                 SELECT  md.id AS id,
                         md.path AS path,
                         pd.id AS parentId,
                         pd.path AS parentPath,
-                        af.id AS fileId,
-                        af.fileName AS fileName,
-                        cd.id AS childDirId,
-                        cd.path AS childDirPath
+                        cd.id AS childId,
+                        cd.path AS childPath
                 FROM MediaDirectory md
                 LEFT JOIN MediaDirectory pd ON pd.id = md.parent.id
-                LEFT JOIN AudioFile af ON af.parent.id = md.id
                 LEFT JOIN MediaDirectory cd ON cd.parent.id = md.id
                 WHERE md.path = ?1
+                ORDER BY cd.path ASC
                 """;
         TypedQuery<Tuple> query = entityManager
                 .createQuery(jpqlQuery, Tuple.class)
@@ -48,29 +46,23 @@ public class MediaDirectoryRepositoryCustomImpl implements MediaDirectoryReposit
         }
     }
 
-    private MediaDirectoryClientResponse convertResult(List<Tuple> results) {
-        var dirId = (UUID)results.get(0).get("id");
-        var dirPath = (String)results.get(0).get("path");
+    private MediaDirectoryWithRelations convertResult(List<Tuple> results) {
+        var id = (UUID)results.get(0).get("id");
+        var path = (String)results.get(0).get("path");
 
-        MediaDirectoryClientResponse.Directory parent = null;
+        MediaDirectoryWithRelations.Directory parent = null;
         if (results.get(0).get("parentId") != null) {
             var parentId = (UUID) results.get(0).get("parentId");
             var parentPath = (String) results.get(0).get("parentPath");
-            parent = new MediaDirectoryClientResponse.Directory(parentId, parentPath);
+            parent = new MediaDirectoryWithRelations.Directory(parentId, parentPath);
         }
 
-        var files = results.stream().filter(r -> r.get("fileId") != null).map(r -> {
-            var fileId = (UUID)r.get("fileId");
-            var fileName = (String)r.get("fileName");
-            return new MediaDirectoryClientResponse.File(fileId, fileName);
+        var children = results.stream().filter(r -> r.get("childId") != null).map(r -> {
+            var childId = (UUID)r.get("childId");
+            var childPath = (String)r.get("childPath");
+            return new MediaDirectoryWithRelations.Directory(childId, childPath);
         }).toList();
 
-        var childDirs = results.stream().filter(r -> r.get("childDirId") != null).map(r -> {
-            var childDirId = (UUID)r.get("childDirId");
-            var childDirPath = (String)r.get("childDirPath");
-            return new MediaDirectoryClientResponse.Directory(childDirId, childDirPath);
-        }).toList();
-
-        return new MediaDirectoryClientResponse(dirId, dirPath, parent, files, childDirs);
+        return new MediaDirectoryWithRelations(id, path, parent, children);
     }
 }

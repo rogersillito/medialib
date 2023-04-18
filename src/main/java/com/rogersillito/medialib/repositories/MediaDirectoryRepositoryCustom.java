@@ -1,7 +1,7 @@
 package com.rogersillito.medialib.repositories;
 
-import com.rogersillito.medialib.dtos.MediaDirectoryClientResponse;
+import com.rogersillito.medialib.dtos.MediaDirectoryWithRelations;
 
 public interface MediaDirectoryRepositoryCustom {
-    MediaDirectoryClientResponse findMediaDirectoryClientResponseByPath(String path);
+    MediaDirectoryWithRelations findWithDirectoryRelationsByPath(String path);
 }
