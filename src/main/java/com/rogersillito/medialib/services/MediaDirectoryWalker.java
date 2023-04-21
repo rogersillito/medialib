@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveTask;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,8 +43,8 @@ public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
             }
             var thisDirectory = new MediaDirectory();
             thisDirectory.setPath(this.path);
-            List<MediaDirectory> subDirectories = getSubDirectories();
-            List<AudioFile> audioFiles = getAudioFiles(thisDirectory);
+            var subDirectories = getSubDirectories();
+            var audioFiles = getAudioFiles(thisDirectory);
             if (this.depth == 0 || audioFiles.size() > 0 || subDirectories.size() > 0) {
                 thisDirectory.setDirectories(subDirectories);
                 thisDirectory.setFiles(audioFiles);
@@ -76,7 +77,7 @@ public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
                     .map(RecursiveTask::join)
                     .filter(Optional::isPresent)
                     .map(Optional::get)
-                    .toList();
+                    .collect(Collectors.toCollection(ArrayList::new));
         }
     }
 }

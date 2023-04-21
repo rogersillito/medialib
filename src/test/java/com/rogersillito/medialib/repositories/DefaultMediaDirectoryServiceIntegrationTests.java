@@ -176,7 +176,6 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
         Path currentRelativePath = Paths.get("");
         String projectRoot = currentRelativePath.toAbsolutePath().toString();
         var testPath = FileSystemUtils.joinPath(projectRoot, "src", "test", "resources", "testdata");
-        System.out.println("testPath is: " + testPath);
 
         // ACT
         var result = mediaDirectoryService.saveDirectoryStructure(testPath);
