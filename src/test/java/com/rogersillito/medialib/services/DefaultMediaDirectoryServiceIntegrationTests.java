@@ -1,7 +1,8 @@
-package com.rogersillito.medialib.repositories;
+package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
+import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
 import com.rogersillito.medialib.services.FileSystemUtils;
 import com.rogersillito.medialib.services.MediaDirectoryService;
 import org.junit.jupiter.api.*;
