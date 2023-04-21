@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 @Service
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
@@ -59,19 +58,9 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
         CompletableFuture<List<AudioFileInfo>> audioFilesFuture =
                 CompletableFuture.supplyAsync(() -> this.audioFileRepository.findAllByParentPath(path));
 
-        while (!directoriesFuture.isDone() && !audioFilesFuture.isDone()) {
-            //TODO: find a better way!
-        }
-
-        MediaDirectoryWithRelations mediaDirectory;
-        List<AudioFileInfo> files;
-        try {
-            mediaDirectory = directoriesFuture.get();
-            files = audioFilesFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            //TODO: improve here & test
-            throw new RuntimeException(e);
-        }
+        CompletableFuture.allOf(directoriesFuture, audioFilesFuture).join();
+        var mediaDirectory = directoriesFuture.join();
+        var files = audioFilesFuture.join();
         if (mediaDirectory == null) {
             return Optional.empty();
         }
