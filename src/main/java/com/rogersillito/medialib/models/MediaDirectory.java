@@ -14,6 +14,11 @@ import java.util.UUID;
 @Entity
 public class MediaDirectory {
 
+    @Override
+    public String toString() {
+        return "%s: %s (%s)".formatted(this.getClass().getSimpleName(), getPath(), getId());
+    }
+
     @Id
     @GeneratedValue
     @UuidGenerator
@@ -33,5 +38,6 @@ public class MediaDirectory {
     //TODO: if we support more than just AudioFile, can we have a collection of the base MediaFile type?
     private List<AudioFile> files = new ArrayList<>();
 
+    @NonNull
     private String path;
 }
