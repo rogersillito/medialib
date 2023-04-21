@@ -3,6 +3,7 @@ package com.rogersillito.medialib.services;
 import com.rogersillito.medialib.dtos.MediaDirectoryWithRelations;
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
+import com.rogersillito.medialib.projections.AudioFileInfo;
 import com.rogersillito.medialib.repositories.AudioFileRepository;
 import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
 import jakarta.inject.Inject;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor(onConstructor = @__(@Inject))
@@ -51,12 +53,17 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
 
     @Override
     public Optional<MediaDirectoryWithRelations> getMediaDirectory(String path) {
-        var mediaDirectory = this.mediaDirectoryRepository.findWithDirectoryRelationsByPath(path);
+        CompletableFuture<MediaDirectoryWithRelations> directoriesFuture =
+                CompletableFuture.supplyAsync(() -> this.mediaDirectoryRepository.findWithDirectoryRelationsByPath(path));
+        CompletableFuture<List<AudioFileInfo>> audioFilesFuture =
+                CompletableFuture.supplyAsync(() -> this.audioFileRepository.findAllByParentPath(path));
+
+        CompletableFuture.allOf(directoriesFuture, audioFilesFuture).join();
+        var mediaDirectory = directoriesFuture.join();
+        var files = audioFilesFuture.join();
         if (mediaDirectory == null) {
             return Optional.empty();
         }
-
-        var files = this.audioFileRepository.findAllByParentPath(path);
         mediaDirectory.setFiles(files.stream().toList());
 
         return Optional.of(mediaDirectory);

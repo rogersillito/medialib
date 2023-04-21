@@ -1,8 +1,9 @@
 package com.rogersillito.medialib.services;
 
-import com.rogersillito.medialib.models.MediaDirectory;
 import com.rogersillito.medialib.models.AudioFile;
+import com.rogersillito.medialib.models.MediaDirectory;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,42 +11,73 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveTask;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MediaDirectoryWalker implements DirectoryWalker<MediaDirectory> {
     @Autowired
     final AudioFileFactory audioFileFactory;
     @Autowired
     final FileSystemUtils fileSystemUtils;
     public Optional<MediaDirectory> walk(String path) {
-        return walkDirectory(path, 0);
+        var forkJoinPool = new ForkJoinPool();
+        var dirWalkTask = new DirWalkTask(path, 0);
+        return forkJoinPool.invoke(dirWalkTask);
     }
 
-    private Optional<MediaDirectory> walkDirectory(String path, int depth) {
-        if (!fileSystemUtils.canWalk(path)) {
+    @RequiredArgsConstructor
+    class DirWalkTask extends RecursiveTask<Optional<MediaDirectory>>
+    {
+        private final String path;
+        private final int depth;
+
+        @Override
+        protected Optional<MediaDirectory> compute() {
+            log.debug("Enumerating directory: " + this.path);
+            if (!fileSystemUtils.canWalk(this.path)) {
+                return Optional.empty();
+            }
+            var thisDirectory = new MediaDirectory();
+            thisDirectory.setPath(this.path);
+            var subDirectories = getSubDirectories();
+            var audioFiles = getAudioFiles(thisDirectory);
+            if (this.depth == 0 || audioFiles.size() > 0 || subDirectories.size() > 0) {
+                thisDirectory.setDirectories(subDirectories);
+                thisDirectory.setFiles(audioFiles);
+                subDirectories.forEach(sd -> sd.setParent(thisDirectory));
+                audioFiles.forEach(sd -> sd.setParent(thisDirectory));
+                return Optional.of(thisDirectory);
+            }
             return Optional.empty();
         }
-        var thisDirectory = new MediaDirectory();
-        thisDirectory.setPath(path);
-        List<MediaDirectory> subdirectories = new ArrayList<>();
-        List<AudioFile> audioFiles = new ArrayList<>();
-        var subDirDepth = depth + 1;
-        for (File directory :
-                fileSystemUtils.getDirectories(path)) {
-            walkDirectory(directory.getPath(), subDirDepth).ifPresent(subdirectories::add);
+
+        private List<AudioFile> getAudioFiles(MediaDirectory thisDirectory) {
+            List<AudioFile> audioFiles = new ArrayList<>();
+            for (File file :
+                    fileSystemUtils.getFiles(this.path)) {
+                audioFileFactory.create(thisDirectory, file).ifPresent(audioFiles::add);
+            }
+            return audioFiles;
         }
-        for (File file :
-                fileSystemUtils.getFiles(path)) {
-            audioFileFactory.create(thisDirectory, file).ifPresent(audioFiles::add);
+
+        private List<MediaDirectory> getSubDirectories() {
+            List<DirWalkTask> subDirTasks = new ArrayList<>();
+            var subDirDepth = this.depth + 1;
+            for (File directory :
+                    fileSystemUtils.getDirectories(this.path)) {
+                var subDirWalkTask = new DirWalkTask(directory.getPath(), subDirDepth);
+                subDirTasks.add(subDirWalkTask);
+            }
+            RecursiveTask.invokeAll(subDirTasks);
+            return subDirTasks.stream()
+                    .map(RecursiveTask::join)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .collect(Collectors.toCollection(ArrayList::new));
         }
-        if (depth == 0 || audioFiles.size() > 0 || subdirectories.size() > 0) {
-            thisDirectory.setDirectories(subdirectories);
-            thisDirectory.setFiles(audioFiles);
-            subdirectories.forEach(sd -> sd.setParent(thisDirectory));
-            audioFiles.forEach(sd -> sd.setParent(thisDirectory));
-            return Optional.of(thisDirectory);
-        }
-        return Optional.empty();
     }
 }

@@ -1,12 +1,16 @@
-package com.rogersillito.medialib.repositories;
+package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
+import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
+import com.rogersillito.medialib.services.FileSystemUtils;
 import com.rogersillito.medialib.services.MediaDirectoryService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,7 +48,7 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
     }
 
     @Test
-    void findMediaDirectoryClientResponseByPath_childDirsAndFilesReturnsExpected() {
+    void getMediaDirectory_childDirsAndFilesReturnsExpected() {
         // ARRANGE
         var parentDirectory = createMediaDirectory("/some/media");
         var mediaDirectory = createMediaDirectory("/some/media/dir1");
@@ -88,7 +92,7 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
     }
 
     @Test
-    void findMediaDirectoryClientResponseByPath_childDirsNoFilesReturnsExpected() {
+    void getMediaDirectory_childDirsNoFilesReturnsExpected() {
         // ARRANGE
         var parentDirectory = createMediaDirectory("/some/media");
         var mediaDirectory = createMediaDirectory("/some/media/dir1");
@@ -115,7 +119,7 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
     }
 
     @Test
-    void findMediaDirectoryClientResponseByPath_childFilesNoDirsReturnsExpected() {
+    void getMediaDirectory_childFilesNoDirsReturnsExpected() {
         // ARRANGE
         var parentDirectory = createMediaDirectory("/some/media");
         var mediaDirectory = createMediaDirectory("/some/media/dir1");
@@ -145,7 +149,7 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
     }
 
     @Test
-    void findMediaDirectoryClientResponseByPath_noParentReturnsExpected() {
+    void getMediaDirectory_noParentReturnsExpected() {
         // ARRANGE
         var mediaDirectory = createMediaDirectory("/some/media/dir1");
         var audioFile1 = createAudioFile(1);
@@ -165,5 +169,19 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
         assertThat(result.isPresent(), is(true));
         assertThat(result.get().getFiles(), hasSize(2));
         assertThat(result.get().getParent(), is(nullValue()));
+    }
+    
+    @Test
+    void saveDirectoryStructure_canSaveRealDirectoryStructure() {
+        // ARRANGE
+        Path currentRelativePath = Paths.get("");
+        String projectRoot = currentRelativePath.toAbsolutePath().toString();
+        var testPath = FileSystemUtils.joinPath(projectRoot, "src", "test", "resources", "testdata");
+
+        // ACT
+        var result = mediaDirectoryService.saveDirectoryStructure(testPath);
+
+        // ASSERT
+        assertThat(result, is(5));
     }
 }

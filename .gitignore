@@ -36,6 +36,10 @@ out/
 ### VS Code ###
 .vscode/
 
-# generated db files
+### generated db files ###
 /generatedSchema/
 /h2db.mv.db
+/h2db.trace.db
+
+### misc ###
+/tools/.sentry-native/*.run.lock
