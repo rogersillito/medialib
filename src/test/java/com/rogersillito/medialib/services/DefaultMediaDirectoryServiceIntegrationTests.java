@@ -7,6 +7,7 @@ import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,10 +26,10 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
     private MediaDirectoryService mediaDirectoryService;
     @Autowired
     private MediaDirectoryRepository mediaDirectoryRepository;
-    private final List<MediaDirectory> testDirectories = new ArrayList<>();
     @Autowired
     private AudioFileRepository audioFileRepository;
 
+    private final List<MediaDirectory> testDirectories = new ArrayList<>();
     private static final String testDataPath = getTestDataPath();
 
     private static String getTestDataPath() {
@@ -222,6 +223,45 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
         var directoryCount = this.mediaDirectoryRepository.findAll().stream()
                 .filter(md -> md.getPath().startsWith(testDataPath))
                 .count();
-        assertThat(directoryCount, is(4L ));
+        assertThat(directoryCount, is(4L));
+    }
+
+    @Test
+    @Transactional
+    void saveDirectoryStructure_saveDirFromRealDirectoryStructureIsLinkedWithAlreadyPersistedParent() {
+        // ARRANGE
+        var parentDirectory = createMediaDirectory(testDataPath);
+        parentDirectory.addFile(createAudioFile(991));
+        parentDirectory.addFile(createAudioFile(992));
+
+        var subDirectory1 = createMediaDirectory(FileSystemUtils.joinPath(testDataPath, "A"));
+        parentDirectory.addSubdirectory(subDirectory1);
+        subDirectory1.addFile(createAudioFile(993));
+        subDirectory1.addFile(createAudioFile(994));
+
+        var subDirectory2Path = FileSystemUtils.joinPath(testDataPath, "A", "B");
+
+        // ACT
+        mediaDirectoryService.saveDirectoryStructure(parentDirectory);
+        var fileCount = mediaDirectoryService.saveDirectoryStructure(subDirectory2Path);
+
+        // ASSERT
+        var directories = this.mediaDirectoryRepository.findAll().stream()
+                .filter(dir -> dir.getPath().startsWith(testDataPath))
+                .toList();
+        var files = this.audioFileRepository.findAll().stream()
+                .map(AudioFile::getFilePath)
+                .filter(path -> path.startsWith(testDataPath))
+                .toList();
+        assertThat(fileCount, is(2));
+        assertThat(directories, hasSize(4));
+        assertThat(files, hasSize(6));
+        var subDir2List = directories.stream()
+                .filter(d -> d.getPath().equals(subDirectory2Path))
+                .toList();
+        assertThat(subDir2List, hasSize(1));
+        var subDir2Parent = subDir2List.get(0).getParent();
+        assertThat(subDir2Parent, is(notNullValue()));
+        assertThat(subDir2Parent.getPath(), is(subDirectory1.getPath()));
     }
 }
