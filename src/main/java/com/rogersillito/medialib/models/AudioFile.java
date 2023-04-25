@@ -26,6 +26,7 @@ public class AudioFile implements MediaFile {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @Cascade({CascadeType.SAVE_UPDATE})
     @ToString.Exclude
+    @Setter(AccessLevel.PACKAGE)
     private MediaDirectory parent;
     @Column(length=3000)
     private String fileName;

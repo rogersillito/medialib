@@ -91,7 +91,6 @@ class DefaultMediaDirectoryServiceTests {
 
     boolean setFilesPersisted(List<AudioFile> audioFiles) {
         audioFilesNotPersisted.removeAll(audioFiles);
-//        System.out.println(audioFiles);
         return true;
     }
 
@@ -109,12 +108,12 @@ class DefaultMediaDirectoryServiceTests {
         }
 
         MediaDirectoryBuilder withDirectory(MediaDirectory directory) {
-            this.mediaDirectory.getDirectories().add(directory);
+            this.mediaDirectory.addSubdirectory(directory);
             return this;
         }
 
         MediaDirectoryBuilder withAudioFile(AudioFile audioFile) {
-            this.mediaDirectory.getFiles().add(audioFile);
+            this.mediaDirectory.addFile(audioFile);
             return this;
         }
 

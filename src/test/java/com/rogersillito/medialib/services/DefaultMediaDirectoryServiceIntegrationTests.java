@@ -2,9 +2,8 @@ package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
+import com.rogersillito.medialib.repositories.AudioFileRepository;
 import com.rogersillito.medialib.repositories.MediaDirectoryRepository;
-import com.rogersillito.medialib.services.FileSystemUtils;
-import com.rogersillito.medialib.services.MediaDirectoryService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -26,6 +26,16 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
     @Autowired
     private MediaDirectoryRepository mediaDirectoryRepository;
     private final List<MediaDirectory> testDirectories = new ArrayList<>();
+    @Autowired
+    private AudioFileRepository audioFileRepository;
+
+    private static final String testDataPath = getTestDataPath();
+
+    private static String getTestDataPath() {
+        Path currentRelativePath = Paths.get("");
+        String projectRoot = currentRelativePath.toAbsolutePath().toString();
+        return FileSystemUtils.joinPath(projectRoot, "src", "test", "resources", "testdata");
+    }
 
     AudioFile createAudioFile(Integer title) {
         AudioFile audioFile = new AudioFile();
@@ -45,6 +55,9 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
     void cleanupTestData() {
         this.testDirectories.forEach(this.mediaDirectoryRepository::delete);
         this.testDirectories.clear();
+        this.mediaDirectoryRepository.findAll().stream()
+                .filter(md -> md.getPath().startsWith(testDataPath))
+                .forEach(this.mediaDirectoryRepository::delete);
     }
 
     @Test
@@ -55,22 +68,15 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
         var audioFile1 = createAudioFile(1);
         var audioFile2 = createAudioFile(2);
 
-        audioFile2.setParent(mediaDirectory);
-        mediaDirectory.getFiles().add(audioFile2);
-        audioFile1.setParent(mediaDirectory);
-        mediaDirectory.getFiles().add(audioFile1);
+        mediaDirectory.addFile(audioFile2);
+        mediaDirectory.addFile(audioFile1);
 
-        parentDirectory.getDirectories().add(mediaDirectory);
-        mediaDirectory.setParent(parentDirectory);
+        parentDirectory.addSubdirectory(mediaDirectory);
 
-        var childDirectory2 = new MediaDirectory();
-        childDirectory2.setPath("/some/media/dir1/dir2b");
-        mediaDirectory.getDirectories().add(childDirectory2);
-        childDirectory2.setParent(mediaDirectory);
-        var childDirectory1 = new MediaDirectory();
-        childDirectory1.setPath("/some/media/dir1/dir2a");
-        mediaDirectory.getDirectories().add(childDirectory1);
-        childDirectory1.setParent(mediaDirectory);
+        var childDirectory2 = createMediaDirectory("/some/media/dir1/dir2b");
+        mediaDirectory.addSubdirectory(childDirectory2);
+        var childDirectory1 = createMediaDirectory("/some/media/dir1/dir2a");
+        mediaDirectory.addSubdirectory(childDirectory1);
 
         mediaDirectoryService.saveDirectoryStructure(parentDirectory);
 
@@ -97,13 +103,10 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
         var parentDirectory = createMediaDirectory("/some/media");
         var mediaDirectory = createMediaDirectory("/some/media/dir1");
 
-        parentDirectory.getDirectories().add(mediaDirectory);
-        mediaDirectory.setParent(parentDirectory);
+        parentDirectory.addSubdirectory(mediaDirectory);
 
-        var childDirectory1 = new MediaDirectory();
-        childDirectory1.setPath("/some/media/dir1/dir2a");
-        mediaDirectory.getDirectories().add(childDirectory1);
-        childDirectory1.setParent(mediaDirectory);
+        var childDirectory1 = createMediaDirectory("/some/media/dir1/dir2a");
+        mediaDirectory.addSubdirectory(childDirectory1);
 
         mediaDirectoryService.saveDirectoryStructure(parentDirectory);
 
@@ -126,13 +129,10 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
         var audioFile1 = createAudioFile(1);
         var audioFile2 = createAudioFile(2);
 
-        audioFile2.setParent(mediaDirectory);
-        mediaDirectory.getFiles().add(audioFile2);
-        audioFile1.setParent(mediaDirectory);
-        mediaDirectory.getFiles().add(audioFile1);
+        mediaDirectory.addFile(audioFile2);
+        mediaDirectory.addFile(audioFile1);
 
-        parentDirectory.getDirectories().add(mediaDirectory);
-        mediaDirectory.setParent(parentDirectory);
+        parentDirectory.addSubdirectory(mediaDirectory);
 
         mediaDirectoryService.saveDirectoryStructure(parentDirectory);
 
@@ -155,10 +155,8 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
         var audioFile1 = createAudioFile(1);
         var audioFile2 = createAudioFile(2);
 
-        audioFile1.setParent(mediaDirectory);
-        mediaDirectory.getFiles().add(audioFile1);
-        audioFile2.setParent(mediaDirectory);
-        mediaDirectory.getFiles().add(audioFile2);
+        mediaDirectory.addFile(audioFile1);
+        mediaDirectory.addFile(audioFile2);
 
         mediaDirectoryService.saveDirectoryStructure(mediaDirectory);
 
@@ -170,18 +168,60 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
         assertThat(result.get().getFiles(), hasSize(2));
         assertThat(result.get().getParent(), is(nullValue()));
     }
-    
+
     @Test
-    void saveDirectoryStructure_canSaveRealDirectoryStructure() {
+    void deleteDirectoryStructure_canDeleteIntermediateDirectoryAndUpdateParent() {
         // ARRANGE
-        Path currentRelativePath = Paths.get("");
-        String projectRoot = currentRelativePath.toAbsolutePath().toString();
-        var testPath = FileSystemUtils.joinPath(projectRoot, "src", "test", "resources", "testdata");
+        var parentDirectory = createMediaDirectory("/some/media");
+        var parentFile1 = createAudioFile(0);
+        parentDirectory.addFile(parentFile1);
+
+        var mediaDirectory = createMediaDirectory("/some/media/dir1");
+
+        var audioFile1 = createAudioFile(1);
+        mediaDirectory.addFile(audioFile1);
+
+        parentDirectory.addSubdirectory(mediaDirectory);
+
+        var childDirectory1 = createMediaDirectory("/some/media/dir1/dir2a");
+        mediaDirectory.addSubdirectory(childDirectory1);
+
+        var audioFile2 = createAudioFile(2);
+        childDirectory1.addFile(audioFile2);
+
+        mediaDirectoryService.saveDirectoryStructure(parentDirectory);
 
         // ACT
-        var result = mediaDirectoryService.saveDirectoryStructure(testPath);
+        mediaDirectoryService.deleteDirectoryStructure("/some/media/dir1");
 
         // ASSERT
-        assertThat(result, is(5));
+        var deletedDir = mediaDirectoryRepository.findByPath("/some/media/dir1");
+        assertThat(deletedDir, is(nullValue()));
+
+        var testMediaDirs = testDirectories.stream()
+                .map(MediaDirectory::getPath)
+                .map(mediaDirectoryRepository::findByPath)
+                .filter(Objects::nonNull)
+                .toList();
+        assertThat(testMediaDirs, hasSize(1));
+        assertThat(testMediaDirs.get(0).getPath(), is("/some/media"));
+
+        var audioFiles = audioFileRepository.findAll();
+        assertThat(audioFiles, hasSize(1));
+        assertThat(audioFiles.get(0).getFileName(), is("0.mp3"));
+    }
+
+    @Test
+    void saveDirectoryStructure_canSaveAndOverwriteUsingRealDirectoryStructure() {
+        // ACT
+        mediaDirectoryService.saveDirectoryStructure(testDataPath);
+        var fileCount = mediaDirectoryService.saveDirectoryStructure(testDataPath);
+
+        // ASSERT
+        assertThat(fileCount, is(5));
+        var directoryCount = this.mediaDirectoryRepository.findAll().stream()
+                .filter(md -> md.getPath().startsWith(testDataPath))
+                .count();
+        assertThat(directoryCount, is(4L ));
     }
 }

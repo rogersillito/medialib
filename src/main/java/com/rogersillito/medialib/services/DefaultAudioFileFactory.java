@@ -21,7 +21,7 @@ public class DefaultAudioFileFactory implements AudioFileFactory {
     @Override
     public Optional<AudioFile> create(MediaDirectory parent, File file) throws RuntimeException {
         var audioFile = new AudioFile();
-        audioFile.setParent(parent);
+        parent.addFile(audioFile);
         audioFile.setFileName(file.getName());
         org.jaudiotagger.audio.AudioFile jatAudioFile;
         try {

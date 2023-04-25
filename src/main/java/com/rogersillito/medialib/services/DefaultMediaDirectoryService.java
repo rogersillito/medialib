@@ -47,7 +47,15 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
     public void deleteDirectoryStructure(String path) {
         var existingDirectory = this.mediaDirectoryRepository.findByPath(path);
         if (existingDirectory != null) {
+            System.out.println("*** need to delete!");
+            MediaDirectory parent = existingDirectory.getParent();
+            if (parent != null) {
+                parent.removeSubdirectory(existingDirectory);
+                this.mediaDirectoryRepository.save(existingDirectory);
+                this.mediaDirectoryRepository.save(parent);
+            }
             this.mediaDirectoryRepository.delete(existingDirectory);
+            this.mediaDirectoryRepository.flush();
         }
     }
 
