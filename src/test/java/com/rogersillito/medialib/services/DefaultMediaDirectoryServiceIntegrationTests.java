@@ -171,6 +171,7 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
     }
 
     @Test
+    @Transactional
     void deleteDirectoryStructure_canDeleteIntermediateDirectoryAndUpdateParent() {
         // ARRANGE
         var parentDirectory = createMediaDirectory("/some/media");
@@ -210,16 +211,16 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
         var audioFiles = audioFileRepository.findAll();
         assertThat(audioFiles, hasSize(1));
         assertThat(audioFiles.get(0).getFileName(), is("0.mp3"));
+        assertThat(audioFiles.get(0).getParent().getDirectories(), hasSize(0));
     }
 
     @Test
     void saveDirectoryStructure_canSaveAndOverwriteUsingRealDirectoryStructure() {
         // ACT
         mediaDirectoryService.saveDirectoryStructure(testDataPath);
-        var fileCount = mediaDirectoryService.saveDirectoryStructure(testDataPath);
+        mediaDirectoryService.saveDirectoryStructure(testDataPath);
 
         // ASSERT
-        assertThat(fileCount, is(5));
         var directoryCount = this.mediaDirectoryRepository.findAll().stream()
                 .filter(md -> md.getPath().startsWith(testDataPath))
                 .count();
@@ -241,9 +242,11 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
 
         var subDirectory2Path = FileSystemUtils.joinPath(testDataPath, "A", "B");
 
-        // ACT
+        // save "already persisted" files/dirs
         mediaDirectoryService.saveDirectoryStructure(parentDirectory);
-        var fileCount = mediaDirectoryService.saveDirectoryStructure(subDirectory2Path);
+
+        // ACT
+        mediaDirectoryService.saveDirectoryStructure(subDirectory2Path);
 
         // ASSERT
         var directories = this.mediaDirectoryRepository.findAll().stream()
@@ -253,7 +256,6 @@ public class DefaultMediaDirectoryServiceIntegrationTests {
                 .map(AudioFile::getFilePath)
                 .filter(path -> path.startsWith(testDataPath))
                 .toList();
-        assertThat(fileCount, is(2));
         assertThat(directories, hasSize(4));
         assertThat(files, hasSize(6));
         var subDir2List = directories.stream()
