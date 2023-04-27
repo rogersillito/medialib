@@ -10,10 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -29,19 +25,17 @@ class DefaultMediaDirectoryServiceTests {
     private FileBrowser mockFileBrowser;
     private DefaultMediaDirectoryService sut;
     private MediaDirectory mediaDirectory;
-    private List<AudioFile> audioFilesNotPersisted = new ArrayList<>();
 
     private static final String path = "/some/path/somewhere";
 
     @BeforeEach
     void arrange() {
         MockitoAnnotations.openMocks(this);
-        audioFilesNotPersisted = new ArrayList<>();
         this.sut = new DefaultMediaDirectoryService(this.mockAudioFileRepository, this.mockMediaDirectoryRepository, this.mockFileBrowser);
     }
 
     @Test
-    void whenNestedFilesFoundAtPath_persistsAllFiles() {
+    void whenNestedFilesFoundAtPath_persistsExpectedDirAndFiles() {
         var dirD = new MediaDirectoryBuilder()
                 .atRelativePath("d")
                 .withAudioFile(audioFile(5))
@@ -74,25 +68,15 @@ class DefaultMediaDirectoryServiceTests {
 
         var result = sut.saveDirectoryStructure(path);
 
-		verify(this.mockAudioFileRepository, times(5))
-                .saveAll(argThat(this::setFilesPersisted));
-        verify(this.mockMediaDirectoryRepository, times(5))
-                .save(argThat(d -> Arrays.asList(dirA, dirB, dirC, dirD, mediaDirectory).contains(d)));
-        assertThat(this.audioFilesNotPersisted, hasSize(0));
+        verify(this.mockMediaDirectoryRepository, times(1))
+                .save(argThat(d -> d.equals(mediaDirectory)));
         assertThat(result, equalTo(5));
     }
 
     AudioFile audioFile(Integer title) {
         AudioFile audioFile = new AudioFile();
         audioFile.setTitle(title.toString());
-        audioFilesNotPersisted.add(audioFile);
         return audioFile;
-    }
-
-    boolean setFilesPersisted(List<AudioFile> audioFiles) {
-        audioFilesNotPersisted.removeAll(audioFiles);
-//        System.out.println(audioFiles);
-        return true;
     }
 
     static class MediaDirectoryBuilder {
@@ -109,12 +93,12 @@ class DefaultMediaDirectoryServiceTests {
         }
 
         MediaDirectoryBuilder withDirectory(MediaDirectory directory) {
-            this.mediaDirectory.getDirectories().add(directory);
+            this.mediaDirectory.addSubdirectory(directory);
             return this;
         }
 
         MediaDirectoryBuilder withAudioFile(AudioFile audioFile) {
-            this.mediaDirectory.getFiles().add(audioFile);
+            this.mediaDirectory.addFile(audioFile);
             return this;
         }
 

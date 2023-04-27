@@ -43,7 +43,7 @@ public class MediaDirectoryWalkerTests {
                 return Optional.empty();
             }
             AudioFile audioFile = new AudioFile();
-            audioFile.setParent(parent);
+            parent.addFile(audioFile);
             audioFile.setFileName(file.getName());
             return Optional.of(audioFile);
         }

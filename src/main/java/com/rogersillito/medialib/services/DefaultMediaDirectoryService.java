@@ -1,7 +1,6 @@
 package com.rogersillito.medialib.services;
 
 import com.rogersillito.medialib.dtos.MediaDirectoryWithRelations;
-import com.rogersillito.medialib.models.AudioFile;
 import com.rogersillito.medialib.models.MediaDirectory;
 import com.rogersillito.medialib.projections.AudioFileInfo;
 import com.rogersillito.medialib.repositories.AudioFileRepository;
@@ -12,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -40,14 +40,23 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
     public int saveDirectoryStructure(MediaDirectory directory) {
         //TODO: instead update if files already persisted
         deleteDirectoryStructure(directory.getPath());
-        return persistDirectory(directory);
+        var dirToPersist = getRootDirectory(directory);
+        this.mediaDirectoryRepository.save(dirToPersist);
+        return getTotalFileCount(dirToPersist);
     }
 
     @Override
     public void deleteDirectoryStructure(String path) {
         var existingDirectory = this.mediaDirectoryRepository.findByPath(path);
         if (existingDirectory != null) {
+            MediaDirectory parent = existingDirectory.getParent();
+            if (parent != null) {
+                parent.removeSubdirectory(existingDirectory);
+                this.mediaDirectoryRepository.save(existingDirectory);
+                this.mediaDirectoryRepository.save(parent);
+            }
             this.mediaDirectoryRepository.delete(existingDirectory);
+            this.mediaDirectoryRepository.flush();
         }
     }
 
@@ -69,18 +78,28 @@ public class DefaultMediaDirectoryService implements MediaDirectoryService {
         return Optional.of(mediaDirectory);
     }
 
-    private int persistDirectory(MediaDirectory directory) {
-        this.mediaDirectoryRepository.save(directory);
-        int saveCount = persistAudioFiles(directory.getFiles());
+    private int getTotalFileCount(MediaDirectory directory) {
+        int saveCount = directory.getFiles().size();
         for (var subDirectory :
                 directory.getDirectories()) {
-            saveCount += persistDirectory(subDirectory);
+            saveCount += getTotalFileCount(subDirectory);
         }
         return saveCount;
     }
 
-    private int persistAudioFiles(List<AudioFile> audioFiles) {
-        this.audioFileRepository.saveAll(audioFiles);
-        return audioFiles.size();
+    /**
+     * Checks if the {@code MediaDirectory} being persisted already has a
+     * persisted parent entry.   If it does, create a new parent/child
+     * link to associate the two.  Then return this parent as the root object
+     * to persist
+     **/
+    private MediaDirectory getRootDirectory(MediaDirectory directory) {
+        var parentPath = Paths.get(directory.getPath()).getParent().toString();
+        var existingParent = this.mediaDirectoryRepository.findByPath(parentPath);
+        if (existingParent == null) {
+            return directory;
+        }
+        existingParent.addSubdirectory(directory);
+        return existingParent;
     }
 }
