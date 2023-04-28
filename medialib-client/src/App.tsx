@@ -16,6 +16,8 @@ function App() {
           Medialib
         </h2>
         <Test></Test> 
+        {/* TODO: this is broken atm... */}
+        {/* <DirectoryView></DirectoryView> */}
         <p>
           Edit <code>src/App.tsx</code> and save to reload.
         </p>
